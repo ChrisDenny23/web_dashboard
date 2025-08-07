@@ -29,130 +29,6 @@ class _EmojiSelectionPageState extends State<EmojiSelectionPage>
     {'emoji': '😃', 'position': 0},
   ];
 
-  // Available emojis for selection
-  List<String> availableEmojis = [
-    '😀',
-    '😃',
-    '😄',
-    '😁',
-    '😆',
-    '😅',
-    '🤣',
-    '😂',
-    '🙂',
-    '🙃',
-    '😉',
-    '😊',
-    '😇',
-    '🥰',
-    '😍',
-    '🤩',
-    '😘',
-    '😗',
-    '😚',
-    '😙',
-    '😋',
-    '😛',
-    '😜',
-    '🤪',
-    '😝',
-    '🤑',
-    '🤗',
-    '🤭',
-    '🤫',
-    '🤔',
-    '🤐',
-    '🤨',
-    '😐',
-    '😑',
-    '😶',
-    '😏',
-    '😒',
-    '🙄',
-    '😬',
-    '🤥',
-    '😔',
-    '😪',
-    '🤤',
-    '😴',
-    '😷',
-    '🤒',
-    '🤕',
-    '🤢',
-    '🤮',
-    '🤧',
-    '🥵',
-    '🥶',
-    '🥴',
-    '😵',
-    '🤯',
-    '🤠',
-    '🥳',
-    '😎',
-    '🤓',
-    '🧐',
-    '👹',
-    '👺',
-    '🤡',
-    '💩',
-    '👻',
-    '💀',
-    '☠️',
-    '👽',
-    '👾',
-    '🤖',
-    '🎃',
-    '😺',
-    '😸',
-    '😹',
-    '😻',
-    '😼',
-    '😽',
-    '🙀',
-    '😿',
-    '😾',
-    '❤️',
-    '🧡',
-    '💛',
-    '💚',
-    '💙',
-    '💜',
-    '🤎',
-    '🖤',
-    '🤍',
-    '💯',
-    '💢',
-    '💥',
-    '💫',
-    '💦',
-    '💨',
-    '🕳️',
-    '💣',
-    '💬',
-    '👁️‍🗨️',
-    '🗨️',
-    '🐶',
-    '🐱',
-    '🐭',
-    '🐹',
-    '🐰',
-    '🦊',
-    '🐻',
-    '🐼',
-    '🐨',
-    '🐯',
-    '🦁',
-    '🐮',
-    '🐷',
-    '🐸',
-    '🐵',
-    '🙈',
-    '🙉',
-    '🙊',
-    '🐒',
-    '🐔',
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -367,24 +243,27 @@ class _EmojiSelectionPageState extends State<EmojiSelectionPage>
     );
   }
 
+  // Modified _replaceEmoji with text input dialog
   void _replaceEmoji(int index) {
-    _showEmojiPicker((selectedEmoji) {
+    final currentEmoji = emojis[index]['emoji'];
+    _showEmojiInputDialog((enteredEmoji) {
       setState(() {
-        emojis[index]['emoji'] = selectedEmoji;
+        emojis[index]['emoji'] = enteredEmoji;
       });
       _showSuccessMessage('تم تحديث الرمز التعبيري بنجاح!');
-    });
+    }, initialEmoji: currentEmoji);
   }
 
+  // Modified _addNewEmoji with text input dialog
   void _addNewEmoji() {
     if (emojis.length >= 20) {
       _showErrorMessage('الحد الأقصى 20 رمز تعبيري مسموح!');
       return;
     }
 
-    _showEmojiPicker((selectedEmoji) {
+    _showEmojiInputDialog((enteredEmoji) {
       setState(() {
-        emojis.insert(0, {'emoji': selectedEmoji, 'position': emojis.length});
+        emojis.insert(0, {'emoji': enteredEmoji, 'position': emojis.length});
         for (int i = 0; i < emojis.length; i++) {
           emojis[i]['position'] = emojis.length - 1 - i;
         }
@@ -393,10 +272,14 @@ class _EmojiSelectionPageState extends State<EmojiSelectionPage>
     });
   }
 
-  void _showEmojiPicker(Function(String) onEmojiSelected) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final dialogWidth = screenWidth * 0.8 > 400 ? 400.0 : screenWidth * 0.8;
-    final dialogHeight = dialogWidth + 100;
+  // New dialog for user emoji input via keyboard
+  void _showEmojiInputDialog(
+    Function(String) onEmojiEntered, {
+    String? initialEmoji,
+  }) {
+    final TextEditingController controller = TextEditingController(
+      text: initialEmoji ?? '',
+    );
 
     showDialog(
       context: context,
@@ -404,49 +287,27 @@ class _EmojiSelectionPageState extends State<EmojiSelectionPage>
           (context) => AlertDialog(
             backgroundColor: widget.currentTheme['cardBg'],
             title: Text(
-              'اختر الرمز التعبيري',
+              'أدخل الرمز التعبيري',
               style: TextStyle(
                 color: widget.currentTheme['textPrimary'],
                 fontWeight: FontWeight.bold,
               ),
             ),
-            content: SizedBox(
-              width: dialogWidth,
-              height: dialogHeight,
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 6,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
+            content: TextField(
+              controller: controller,
+              autofocus: true,
+              maxLength: 2, // Most emojis fit within 2 UTF-16 code units
+              style: const TextStyle(fontSize: 32),
+              decoration: InputDecoration(
+                hintText: 'أدخل رمز تعبيري هنا',
+                counterText: '',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                itemCount: availableEmojis.length,
-                itemBuilder: (context, index) {
-                  final emoji = availableEmojis[index];
-                  return GestureDetector(
-                    onTap: () {
-                      onEmojiSelected(emoji);
-                      Navigator.pop(context);
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: widget.currentTheme['mainBg'],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: widget.currentTheme['textSecondary']
-                              .withOpacity(0.2),
-                          width: 1,
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          emoji,
-                          style: const TextStyle(fontSize: 24),
-                        ),
-                      ),
-                    ),
-                  );
-                },
+                filled: true,
+                fillColor: widget.currentTheme['mainBg'],
               ),
+              textAlign: TextAlign.center,
             ),
             actions: [
               TextButton(
@@ -454,6 +315,21 @@ class _EmojiSelectionPageState extends State<EmojiSelectionPage>
                 child: Text(
                   'إلغاء',
                   style: TextStyle(color: widget.currentTheme['textSecondary']),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  final enteredText = controller.text.trim();
+                  if (enteredText.isNotEmpty) {
+                    onEmojiEntered(enteredText);
+                    Navigator.pop(context);
+                  } else {
+                    // Optionally: show a message or do nothing for empty input
+                  }
+                },
+                child: const Text(
+                  'إضافة',
+                  style: TextStyle(color: Colors.green),
                 ),
               ),
             ],
@@ -792,7 +668,9 @@ class _EmojiSelectionPageState extends State<EmojiSelectionPage>
                               ),
                               SizedBox(height: isMobile ? 2 : 4),
                               Text(
-                                '• أرقام الموضع تحدد ترتيب الرموز التعبيرية\n• يمكن إضافة حد أقصى 20 رمز تعبيري\n• يتم تطبيق التغييرات فوراً بعد الحفظ',
+                                '• أرقام الموضع تحدد ترتيب الرموز التعبيرية\n'
+                                '• يمكن إضافة حد أقصى 20 رمز تعبيري\n'
+                                '• يتم تطبيق التغييرات فوراً بعد الحفظ',
                                 style: TextStyle(
                                   color: widget.currentTheme['textSecondary'],
                                   fontSize: isMobile ? 10 : 12,
