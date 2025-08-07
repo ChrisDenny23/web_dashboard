@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "305938177329",
+    "project_id": "lona---dashboard",
+    "storage_bucket": "lona---dashboard.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:305938177329:android:368e78f140999aba5f6410",
+        "android_client_info": {
+          "package_name": "com.example.web_dashboard"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJvXgk6vdZJLdODPb9KcFKCMfT6XaXQeg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
