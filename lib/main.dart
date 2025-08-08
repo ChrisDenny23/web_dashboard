@@ -2,8 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:web_dashboard/pages/country_management.dart';
 import 'package:web_dashboard/pages/emojiselection.dart';
 import 'package:web_dashboard/pages/analytics_dashboard.dart';
+import 'package:web_dashboard/pages/report_page.dart';
 import 'package:web_dashboard/pages/support_page.dart';
 import 'pages/admin_dashboard_page.dart';
 import 'pages/public_message_page.dart';
@@ -13,6 +15,7 @@ import 'pages/name_design_page.dart';
 import 'pages/files_page.dart';
 import 'pages/banned_page.dart';
 import 'pages/logs_page.dart';
+
 import 'widgets/enhanced_sidebar.dart';
 
 // Firebase configuration options
@@ -205,10 +208,14 @@ class _AdminLayoutState extends State<AdminLayout>
         return VIPPage(currentTheme: currentTheme);
       case 'security':
         return BannedSuspendedUsersPage(currentTheme: currentTheme);
+      case 'reports':
+        return ReportsPage(currentTheme: currentTheme);
       case 'settings':
         return LogsPage(currentTheme: currentTheme);
       case 'support':
         return ServerSupportPage(currentTheme: currentTheme);
+      case 'country_management':
+        return CountriesManagementPage(currentTheme: currentTheme);
       default:
         return AdminDashboardPage(currentTheme: currentTheme);
     }

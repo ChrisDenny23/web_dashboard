@@ -1,6 +1,8 @@
 // ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously, deprecated_member_use, avoid_web_libraries_in_flutter
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../widgets/enhanced_header.dart';
 
 class EmojiSelectionPage extends StatefulWidget {
@@ -16,17 +18,18 @@ class _EmojiSelectionPageState extends State<EmojiSelectionPage>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
   late AnimationController _fadeController;
+  final ImagePicker _picker = ImagePicker();
 
   bool isLoading = false;
 
-  // Sample emoji list with positions
+  // Sample emoji list with positions, supporting either text emoji or image file
   List<Map<String, dynamic>> emojis = [
-    {'emoji': '😃', 'position': 5},
-    {'emoji': '😊', 'position': 4},
-    {'emoji': '🐻', 'position': 3},
-    {'emoji': '💋', 'position': 2},
-    {'emoji': '😊', 'position': 1},
-    {'emoji': '😃', 'position': 0},
+    {'emoji': '😃', 'imageFile': null, 'position': 5},
+    {'emoji': '😊', 'imageFile': null, 'position': 4},
+    {'emoji': '🐻', 'imageFile': null, 'position': 3},
+    {'emoji': '💋', 'imageFile': null, 'position': 2},
+    {'emoji': '😊', 'imageFile': null, 'position': 1},
+    {'emoji': '😃', 'imageFile': null, 'position': 0},
   ];
 
   @override
@@ -51,7 +54,7 @@ class _EmojiSelectionPageState extends State<EmojiSelectionPage>
     super.dispose();
   }
 
-  // --- CARD BUILDER WITH MOBILE OVERFLOW FIXES ---
+  // Build emoji card, showing image if provided, else text emoji
   Widget _buildEmojiCard(
     Map<String, dynamic> emojiData,
     int index,
@@ -59,8 +62,23 @@ class _EmojiSelectionPageState extends State<EmojiSelectionPage>
     double emojiFontSize,
     double iconSize,
     TextStyle positionTextStyle,
-    bool isMobile, // << pass mobile flag
+    bool isMobile,
   ) {
+    Widget emojiWidget;
+    if (emojiData['imageFile'] != null && emojiData['imageFile'] is File) {
+      emojiWidget = Image.file(
+        emojiData['imageFile'],
+        fit: BoxFit.contain,
+        width: cardWidth * (isMobile ? 0.5 : 0.7),
+        height: cardWidth * (isMobile ? 0.5 : 0.7),
+      );
+    } else {
+      emojiWidget = Text(
+        emojiData['emoji'] ?? '',
+        style: TextStyle(fontSize: emojiFontSize),
+      );
+    }
+
     return SlideTransition(
       position: Tween<Offset>(
         begin: const Offset(0, 0.5),
@@ -77,7 +95,6 @@ class _EmojiSelectionPageState extends State<EmojiSelectionPage>
       ),
       child: Container(
         width: cardWidth,
-        // less vertical margin on mobile
         margin: EdgeInsets.symmetric(horizontal: 8, vertical: isMobile ? 2 : 4),
         decoration: BoxDecoration(
           color: widget.currentTheme['cardBg'],
@@ -93,27 +110,18 @@ class _EmojiSelectionPageState extends State<EmojiSelectionPage>
         child: ConstrainedBox(
           constraints: BoxConstraints(
             minHeight: 110,
-            maxHeight: isMobile ? 155 : 200, // LOWER maxHeight on mobile
+            maxHeight: isMobile ? 155 : 200,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // main emoji display
               SizedBox(
                 width: cardWidth,
-                height:
-                    cardWidth * (isMobile ? 0.5 : 0.7), // less height on mobile
+                height: cardWidth * (isMobile ? 0.5 : 0.7),
                 child: Center(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      emojiData['emoji'],
-                      style: TextStyle(fontSize: emojiFontSize),
-                    ),
-                  ),
+                  child: FittedBox(fit: BoxFit.scaleDown, child: emojiWidget),
                 ),
               ),
-              // position number
               Container(
                 width: iconSize + 14,
                 height: iconSize + 14,
@@ -135,7 +143,6 @@ class _EmojiSelectionPageState extends State<EmojiSelectionPage>
                   ),
                 ),
               ),
-              // Button row always min size and match-parent width
               Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: 8,
@@ -191,7 +198,6 @@ class _EmojiSelectionPageState extends State<EmojiSelectionPage>
                   ],
                 ),
               ),
-              // More room at the bottom only on big screens
               SizedBox(height: isMobile ? 2 : 6),
             ],
           ),
@@ -243,98 +249,42 @@ class _EmojiSelectionPageState extends State<EmojiSelectionPage>
     );
   }
 
-  // Modified _replaceEmoji with text input dialog
-  void _replaceEmoji(int index) {
-    final currentEmoji = emojis[index]['emoji'];
-    _showEmojiInputDialog((enteredEmoji) {
-      setState(() {
-        emojis[index]['emoji'] = enteredEmoji;
-      });
-      _showSuccessMessage('تم تحديث الرمز التعبيري بنجاح!');
-    }, initialEmoji: currentEmoji);
-  }
-
-  // Modified _addNewEmoji with text input dialog
-  void _addNewEmoji() {
+  // Pick image from gallery and add as new emoji
+  Future<void> _addNewEmoji() async {
     if (emojis.length >= 20) {
       _showErrorMessage('الحد الأقصى 20 رمز تعبيري مسموح!');
       return;
     }
-
-    _showEmojiInputDialog((enteredEmoji) {
+    final XFile? pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+    );
+    if (pickedFile != null) {
       setState(() {
-        emojis.insert(0, {'emoji': enteredEmoji, 'position': emojis.length});
+        emojis.insert(0, {
+          'emoji': null,
+          'imageFile': File(pickedFile.path),
+          'position': emojis.length,
+        });
         for (int i = 0; i < emojis.length; i++) {
           emojis[i]['position'] = emojis.length - 1 - i;
         }
       });
       _showSuccessMessage('تم إضافة رمز تعبيري جديد بنجاح!');
-    });
+    }
   }
 
-  // New dialog for user emoji input via keyboard
-  void _showEmojiInputDialog(
-    Function(String) onEmojiEntered, {
-    String? initialEmoji,
-  }) {
-    final TextEditingController controller = TextEditingController(
-      text: initialEmoji ?? '',
+  // Pick image from gallery and replace existing emoji
+  Future<void> _replaceEmoji(int index) async {
+    final XFile? pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
     );
-
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            backgroundColor: widget.currentTheme['cardBg'],
-            title: Text(
-              'أدخل الرمز التعبيري',
-              style: TextStyle(
-                color: widget.currentTheme['textPrimary'],
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            content: TextField(
-              controller: controller,
-              autofocus: true,
-              maxLength: 2, // Most emojis fit within 2 UTF-16 code units
-              style: const TextStyle(fontSize: 32),
-              decoration: InputDecoration(
-                hintText: 'أدخل رمز تعبيري هنا',
-                counterText: '',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                filled: true,
-                fillColor: widget.currentTheme['mainBg'],
-              ),
-              textAlign: TextAlign.center,
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(
-                  'إلغاء',
-                  style: TextStyle(color: widget.currentTheme['textSecondary']),
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  final enteredText = controller.text.trim();
-                  if (enteredText.isNotEmpty) {
-                    onEmojiEntered(enteredText);
-                    Navigator.pop(context);
-                  } else {
-                    // Optionally: show a message or do nothing for empty input
-                  }
-                },
-                child: const Text(
-                  'إضافة',
-                  style: TextStyle(color: Colors.green),
-                ),
-              ),
-            ],
-          ),
-    );
+    if (pickedFile != null) {
+      setState(() {
+        emojis[index]['emoji'] = null;
+        emojis[index]['imageFile'] = File(pickedFile.path);
+      });
+      _showSuccessMessage('تم تحديث الرمز التعبيري بنجاح!');
+    }
   }
 
   void _saveChanges() async {
@@ -382,7 +332,7 @@ class _EmojiSelectionPageState extends State<EmojiSelectionPage>
     final double headerIconSize = isMobile ? 20 : 24;
     final double headerFontSize = isMobile ? 16 : 18;
     final double subtitleFontSize = isMobile ? 12 : 14;
-    final double emojiFontSize = isMobile ? 28 : 40; // << reduced a bit
+    final double emojiFontSize = isMobile ? 28 : 40;
     final double iconSize = isMobile ? 16 : 20;
     final double buttonPaddingVertical = isMobile ? 8 : 12;
     final double buttonPaddingHorizontal = isMobile ? 12 : 16;
@@ -617,7 +567,6 @@ class _EmojiSelectionPageState extends State<EmojiSelectionPage>
                                     crossAxisCount: crossAxisCount,
                                     crossAxisSpacing: 16,
                                     mainAxisSpacing: 16,
-                                    // Mobile: Shorter aspect, to avoid vertical overflow
                                     childAspectRatio: isMobile ? 0.78 : 0.90,
                                   ),
                               itemCount: emojis.length,
@@ -629,7 +578,7 @@ class _EmojiSelectionPageState extends State<EmojiSelectionPage>
                                   emojiFontSize,
                                   iconSize,
                                   positionTextStyle,
-                                  isMobile, // << pass to avoid overflow
+                                  isMobile,
                                 );
                               },
                             ),
@@ -668,9 +617,7 @@ class _EmojiSelectionPageState extends State<EmojiSelectionPage>
                               ),
                               SizedBox(height: isMobile ? 2 : 4),
                               Text(
-                                '• أرقام الموضع تحدد ترتيب الرموز التعبيرية\n'
-                                '• يمكن إضافة حد أقصى 20 رمز تعبيري\n'
-                                '• يتم تطبيق التغييرات فوراً بعد الحفظ',
+                                '• أرقام الموضع تحدد ترتيب الرموز التعبيرية\n• يمكن إضافة حد أقصى 20 رمز تعبيري\n• يتم تطبيق التغييرات فوراً بعد الحفظ',
                                 style: TextStyle(
                                   color: widget.currentTheme['textSecondary'],
                                   fontSize: isMobile ? 10 : 12,
